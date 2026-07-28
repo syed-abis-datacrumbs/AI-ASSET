@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply bg-slate-50 text-slate-900 transition-colors duration-300;
+  }
+
+  html.dark body {
+    @apply bg-[#090b0e] text-slate-100;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Custom glow and glassmorphism utilities */
+.glass-panel {
+  @apply bg-white/80 dark:bg-[#101214]/80 backdrop-blur-md border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-none;
+}
+
+.circuit-grid {
+  background-image: 
+    radial-gradient(circle at 50% 30%, rgba(37, 226, 204, 0.08) 0%, transparent 60%),
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+
+html.dark .circuit-grid {
+  background-image: 
+    radial-gradient(circle at 50% 30%, rgba(37, 226, 204, 0.07) 0%, transparent 60%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+
+/* Animations */
+@keyframes dash {
+  to { stroke-dashoffset: -100; }
+}
+
+.animate-dash {
+  stroke-dasharray: 8 12;
+  animation: dash 20s linear infinite;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { @apply bg-slate-100 dark:bg-[#090b0e]; }
+::-webkit-scrollbar-thumb { @apply bg-slate-300 dark:bg-slate-800 rounded-md; }
+::-webkit-scrollbar-thumb:hover { @apply bg-[#25e2cc]; }
