@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sun, Moon } from 'lucide-react';
+import Link from 'next/link';
+import { Sun, Moon, Cpu } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuthModal } from '@/context/AuthModalContext';
 
@@ -72,6 +73,14 @@ export const Header: React.FC = () => {
                 {item.label}
               </button>
             ))}
+
+            <Link 
+              href="/ai-asset-management"
+              className="px-2.5 py-1 rounded-lg bg-[#25e2cc]/10 text-[#25e2cc] border border-[#25e2cc]/30 hover:bg-[#25e2cc]/20 transition-all flex items-center gap-1.5 font-bold"
+            >
+              <Cpu className="w-3.5 h-3.5" />
+              <span>AI Asset Mgmt</span>
+            </Link>
           </nav>
         </div>
 

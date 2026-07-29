@@ -22,7 +22,8 @@ import {
   ShieldAlert,
   Send,
   CheckCircle2,
-  Clock
+  Clock,
+  Cpu
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuthModal } from '@/context/AuthModalContext';
@@ -38,10 +39,122 @@ export default function DashboardPage() {
   const [ticketMessage, setTicketMessage] = useState('');
   const [ticketSubmitted, setTicketSubmitted] = useState(false);
 
+  // Dynamic User-Uploaded & Created Data Repositories State
+  const [dataRepositories, setDataRepositories] = useState([
+    {
+      id: 'repo-1',
+      name: 'PowerGen_Turbine_Vibration_2024.parquet',
+      assetType: 'Single Asset',
+      size: '4.2 GB',
+      uploadDate: '2026-07-28 14:32',
+      status: 'NOMINAL',
+      statusColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 border-emerald-500/30',
+      integrity: 99.8,
+      records: '14,250,000 logs',
+      hash: 'sha256:8f92a1...e72b',
+      fileName: 'turbine_vib_raw.parquet',
+      author: 'Abis Syed (User Upload)'
+    },
+    {
+      id: 'repo-2',
+      name: 'Substation_A_Harmonics_Stream.db',
+      assetType: 'Group Assets',
+      size: '1.8 GB',
+      uploadDate: '2026-07-27 09:15',
+      status: 'WARN: INGESTION',
+      statusColor: 'bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-400 border-rose-500/40',
+      integrity: 88.4,
+      records: '6,120,000 logs',
+      hash: 'sha256:3c14d9...f401',
+      fileName: 'substation_grid_logs.db',
+      author: 'Abis Syed (User Upload)'
+    },
+    {
+      id: 'repo-3',
+      name: 'Chemical_Reactor_Batch_Logs.csv',
+      assetType: 'Single Asset',
+      size: '850 MB',
+      uploadDate: '2026-07-29 08:45',
+      status: 'OPTIMAL',
+      statusColor: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/80 dark:text-cyan-400 border-cyan-500/30',
+      integrity: 100,
+      records: '3,890,000 logs',
+      hash: 'sha256:9d82b4...a112',
+      fileName: 'reactor_batch_stream.csv',
+      author: 'Abis Syed (User Upload)'
+    },
+    {
+      id: 'repo-4',
+      name: 'CNC_Spindle_Acoustic_Audit.h5',
+      assetType: 'Group Assets',
+      size: '2.1 GB',
+      uploadDate: '2026-07-29 11:20',
+      status: 'ACTIVE SYNC',
+      statusColor: 'bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-400 border-purple-500/30',
+      integrity: 96.5,
+      records: '9,400,000 logs',
+      hash: 'sha256:7b55e1...d904',
+      fileName: 'spindle_acoustic_matrix.h5',
+      author: 'Abis Syed (User Upload)'
+    }
+  ]);
+
+  // Upload/Create Repository Modal State
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [newRepoName, setNewRepoName] = useState('');
+  const [assetType, setAssetType] = useState<'Single Asset' | 'Group Assets'>('Single Asset');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleCreateRepository = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRepoName) return;
+
+    const uploadedFileName = selectedFile ? selectedFile.name : `${newRepoName.toLowerCase().replace(/\s+/g, '_')}_data.parquet`;
+    const fileSizeMB = selectedFile ? (selectedFile.size / (1024 * 1024)).toFixed(1) + ' MB' : '1.2 GB';
+
+    const newRepo = {
+      id: `repo-${Date.now()}`,
+      name: newRepoName,
+      assetType: assetType,
+      size: fileSizeMB,
+      uploadDate: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      status: 'OPTIMAL',
+      statusColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 border-emerald-500/30',
+      integrity: 100,
+      records: `${Math.floor(Math.random() * 8 + 1)},200,000 logs`,
+      hash: `sha256:${Math.random().toString(36).substring(2, 10)}...${Math.random().toString(36).substring(2, 6)}`,
+      fileName: uploadedFileName,
+      author: 'Abis Syed (User Upload)'
+    };
+
+    setDataRepositories([newRepo, ...dataRepositories]);
+    setIsUploadModalOpen(false);
+    setNewRepoName('');
+    setSelectedFile(null);
+    setAssetType('Single Asset');
+  };
+
+  const handleDeleteRepository = (id: string) => {
+    setDataRepositories(dataRepositories.filter(repo => repo.id !== id));
+  };
+
+  const handleTicketSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ticketSubject || !ticketMessage) return;
+    setTicketSubmitted(true);
+    setTimeout(() => {
+      setTicketSubmitted(false);
+      setTicketSubject('');
+      setTicketMessage('');
+    }, 4000);
+  };
+
   // EXACT 3 PAGES AS REQUESTED BY USER: Home, Asset Vault, Support
   const sidebarItems = [
     { label: 'Home', icon: Home, href: '/' },
     { label: 'Asset Vault', icon: Database },
+    { label: 'AI Asset Management', icon: Cpu, href: '/ai-asset-management' },
     { label: 'Support', icon: HelpCircle },
   ];
 
@@ -72,16 +185,11 @@ export default function DashboardPage() {
     }
   ];
 
-  const handleTicketSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!ticketSubject || !ticketMessage) return;
-    setTicketSubmitted(true);
-    setTimeout(() => {
-      setTicketSubmitted(false);
-      setTicketSubject('');
-      setTicketMessage('');
-    }, 4000);
-  };
+  const filteredRepositories = dataRepositories.filter(repo => 
+    repo.name.toLowerCase().includes(commandInput.toLowerCase()) ||
+    repo.assetType.toLowerCase().includes(commandInput.toLowerCase()) ||
+    repo.fileName.toLowerCase().includes(commandInput.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#07090c] text-slate-900 dark:text-slate-100 font-sans flex flex-col justify-between transition-colors duration-300 selection:bg-[#25e2cc] selection:text-black">
@@ -107,6 +215,13 @@ export default function DashboardPage() {
               >
                 Monitoring
               </button>
+              <Link 
+                href="/ai-asset-management" 
+                className="hover:text-slate-900 dark:hover:text-white transition-colors py-2 flex items-center gap-1.5"
+              >
+                <Cpu className="w-3.5 h-3.5 text-[#25e2cc]" />
+                <span>AI Asset Mgmt</span>
+              </Link>
               <button 
                 onClick={() => setActiveTab('Support')}
                 className={`relative py-2 transition-colors ${
@@ -249,6 +364,9 @@ export default function DashboardPage() {
                 <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white font-sans">
                   Technical Data Vault
                 </h1>
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-mono mt-2">
+                  User Uploaded Data Repositories & Encrypted Storage Nodes
+                </p>
               </div>
 
               {/* Command Search Input Bar */}
@@ -259,15 +377,18 @@ export default function DashboardPage() {
                     type="text"
                     value={commandInput}
                     onChange={(e) => setCommandInput(e.target.value)}
-                    placeholder="Enter data node source or upload telemetry batch..."
+                    placeholder="Search user uploaded repositories by format, sector, or filename..."
                     className="w-full bg-transparent text-xs font-mono text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
                   />
                   <div className="flex items-center gap-2 pl-2">
                     <span className="px-2.5 py-1 rounded bg-slate-100 dark:bg-[#131922] text-[10px] font-mono text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-800">
                       CMD + K
                     </span>
-                    <button className="px-4 py-2 rounded-lg bg-[#25e2cc] hover:bg-[#1fd1bd] text-slate-950 font-mono font-bold text-xs flex items-center gap-1.5 shadow-md shadow-[#25e2cc]/20 cursor-pointer">
-                      <span>Flash</span>
+                    <button 
+                      onClick={() => setIsUploadModalOpen(true)}
+                      className="px-4 py-2 rounded-lg bg-[#25e2cc] hover:bg-[#1fd1bd] text-slate-950 font-mono font-bold text-xs flex items-center gap-1.5 shadow-md shadow-[#25e2cc]/20 cursor-pointer"
+                    >
+                      <span>+ Upload Data Repo</span>
                       <Zap className="w-3.5 h-3.5 fill-current" />
                     </button>
                   </div>
@@ -310,169 +431,274 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* ASSET VAULT CARDS SECTION */}
+              {/* USER-UPLOADED DATA REPOSITORIES SECTION */}
               <div className="max-w-6xl mx-auto space-y-4">
                 
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight font-sans">
-                      Asset Vault
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight font-sans flex items-center gap-2">
+                      <Database className="w-6 h-6 text-[#25e2cc]" />
+                      <span>User Data Repositories</span>
+                      <span className="px-2 py-0.5 rounded-full text-xs font-mono bg-[#25e2cc]/10 text-[#25e2cc] border border-[#25e2cc]/30">
+                        {filteredRepositories.length} Repositories
+                      </span>
                     </h2>
                     <p className="text-xs text-slate-600 dark:text-slate-400 font-mono mt-0.5">
-                      Storage node health and cryptographic integrity verification.
+                      Uploaded data files, industrial sensor logs, and active vault storage nodes created by user.
                     </p>
                   </div>
 
-                  <button className="text-xs font-mono text-[#25e2cc] hover:underline flex items-center gap-1 font-semibold">
-                    <span>Open Node Editor</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                  <button 
+                    onClick={() => setIsUploadModalOpen(true)}
+                    className="px-4 py-2.5 rounded-xl bg-[#25e2cc] hover:bg-[#1fd1bd] text-slate-950 font-mono font-bold text-xs flex items-center gap-2 shadow-md shadow-[#25e2cc]/20 cursor-pointer self-start sm:self-auto"
+                  >
+                    <span>+ Upload / Create Repository</span>
                   </button>
                 </div>
 
-                {/* 3 Main Asset Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                  
-                  {/* Card 1: HV Transformer */}
-                  <div className="p-6 rounded-2xl bg-white dark:bg-[#0a0d12]/90 border border-slate-200 dark:border-slate-800 hover:border-[#25e2cc]/60 transition-all flex flex-col justify-between space-y-6 shadow-sm dark:shadow-none">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-base font-bold text-slate-900 dark:text-white font-sans">HV Transformer</h3>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 border border-emerald-500/30">
-                          NOMINAL
-                        </span>
-                      </div>
-                      
-                      <p className="text-xs text-slate-600 dark:text-slate-400 font-sans mb-4">
-                        Storage node health and cryptographic integrity verification.
-                      </p>
-
-                      <div className="space-y-1.5 mb-6">
-                        <div className="flex justify-between text-xs font-mono">
-                          <span className="text-slate-500 dark:text-slate-400">EFFICIENCY</span>
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">98%</span>
+                {/* User Repositories Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                  {filteredRepositories.map((repo) => (
+                    <div 
+                      key={repo.id}
+                      className="p-6 rounded-2xl bg-white dark:bg-[#0a0d12]/90 border border-slate-200 dark:border-slate-800 hover:border-[#25e2cc]/60 transition-all flex flex-col justify-between space-y-6 shadow-sm dark:shadow-none relative group"
+                    >
+                      <div>
+                        {/* Header: Title + Status Badge */}
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div>
+                            <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#25e2cc]/10 text-[#25e2cc] border border-[#25e2cc]/30 uppercase">
+                              {repo.assetType}
+                            </span>
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white font-mono truncate max-w-[200px] mt-1.5" title={repo.name}>
+                              {repo.name}
+                            </h3>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border flex-shrink-0 ${repo.statusColor}`}>
+                            {repo.status}
+                          </span>
                         </div>
-                        <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div className="w-[98%] h-full bg-[#25e2cc] rounded-full"></div>
+                        
+                        {/* File Name + Size */}
+                        <div className="text-xs text-slate-600 dark:text-slate-400 font-mono mb-4 flex items-center justify-between">
+                          <span className="truncate max-w-[150px] text-slate-500" title={repo.fileName}>{repo.fileName}</span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200">{repo.size}</span>
                         </div>
-                      </div>
 
-                      {/* 2 Metric Boxes */}
-                      <div className="grid grid-cols-2 gap-3 font-sans">
-                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0e131b] border border-slate-200 dark:border-slate-800">
-                          <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase font-bold">LOAD (kVA)</div>
-                          <div className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-snug">
-                            Storage node health and cryptographic integrity verification.
+                        {/* Integrity Progress Bar */}
+                        <div className="space-y-1.5 mb-5">
+                          <div className="flex justify-between text-xs font-mono">
+                            <span className="text-slate-500 dark:text-slate-400">VAULT INTEGRITY</span>
+                            <span className="text-[#25e2cc] font-bold">{repo.integrity}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-[#25e2cc] rounded-full transition-all duration-500"
+                              style={{ width: `${repo.integrity}%` }}
+                            ></div>
                           </div>
                         </div>
-                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0e131b] border border-slate-200 dark:border-slate-800">
-                          <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase font-bold">TEMP (C)</div>
-                          <div className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-snug">
-                            Storage node health and cryptographic integrity verification.
+
+                        {/* 2 Metadata Metric Boxes */}
+                        <div className="grid grid-cols-2 gap-2.5 font-sans">
+                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0e131b] border border-slate-200 dark:border-slate-800">
+                            <div className="text-[9px] font-mono text-slate-500 dark:text-slate-400 uppercase font-bold">RECORDS</div>
+                            <div className="text-xs font-bold font-mono text-slate-800 dark:text-slate-200 mt-0.5">
+                              {repo.records}
+                            </div>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0e131b] border border-slate-200 dark:border-slate-800">
+                            <div className="text-[9px] font-mono text-slate-500 dark:text-slate-400 uppercase font-bold">UPLOAD TIME</div>
+                            <div className="text-[10px] font-mono text-slate-700 dark:text-slate-300 mt-0.5">
+                              {repo.uploadDate}
+                            </div>
                           </div>
                         </div>
+
+                        <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                          <span>{repo.hash}</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">AES-256</span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => alert(`Querying data repository node: ${repo.name}`)}
+                          className="flex-1 py-2 rounded-xl bg-slate-100 dark:bg-[#111720] hover:bg-slate-200 dark:hover:bg-[#16202c] text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-800 hover:border-[#25e2cc] transition-all cursor-pointer"
+                        >
+                          Query Repository
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteRepository(repo.id)}
+                          title="Delete Repository"
+                          className="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 text-xs font-mono font-bold transition-all cursor-pointer"
+                        >
+                          ✕
+                        </button>
                       </div>
                     </div>
-
-                    <button className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-[#111720] hover:bg-slate-200 dark:hover:bg-[#16202c] text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-800 hover:border-[#25e2cc] transition-all cursor-pointer">
-                      Analyze Monitoring
-                    </button>
-                  </div>
-
-                  {/* Card 2: CNC Spindle Motor */}
-                  <div className="p-6 rounded-2xl bg-white dark:bg-[#0a0d12]/90 border border-slate-200 dark:border-slate-800 hover:border-rose-500/60 transition-all flex flex-col justify-between space-y-6 shadow-sm dark:shadow-none">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-base font-bold text-slate-900 dark:text-white font-sans">CNC Spindle Motor</h3>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-400 border border-rose-500/40">
-                          WARN: VIB
-                        </span>
-                      </div>
-                      
-                      <p className="text-xs text-slate-600 dark:text-slate-400 font-sans mb-4">
-                        Storage node health and cryptographic integrity verification.
-                      </p>
-
-                      <div className="space-y-1.5 mb-6">
-                        <div className="flex justify-between text-xs font-mono">
-                          <span className="text-slate-500 dark:text-slate-400">HEALTH SCORE</span>
-                          <span className="text-rose-600 dark:text-rose-400 font-bold">64%</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div className="w-[64%] h-full bg-rose-500 rounded-full"></div>
-                        </div>
-                      </div>
-
-                      {/* 2 Metric Boxes */}
-                      <div className="grid grid-cols-2 gap-3 font-sans">
-                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0e131b] border border-slate-200 dark:border-slate-800">
-                          <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase font-bold">RPM (ACTUAL)</div>
-                          <div className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-snug">
-                            Storage node health and cryptographic integrity verification.
-                          </div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0e131b] border border-slate-200 dark:border-slate-800">
-                          <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase font-bold">AMPS</div>
-                          <div className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-snug">
-                            Storage node health and cryptographic integrity verification.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button className="w-full py-2.5 rounded-xl bg-rose-50 dark:bg-[#111720] hover:bg-rose-100 dark:hover:bg-[#1c1216] text-xs font-mono font-bold text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30 hover:border-rose-500 transition-all cursor-pointer">
-                      Emergency Diagnostic
-                    </button>
-                  </div>
-
-                  {/* Card 3: Industrial Boiler */}
-                  <div className="p-6 rounded-2xl bg-white dark:bg-[#0a0d12]/90 border border-slate-200 dark:border-slate-800 hover:border-[#25e2cc]/60 transition-all flex flex-col justify-between space-y-6 shadow-sm dark:shadow-none">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-base font-bold text-slate-900 dark:text-white font-sans">Industrial Boiler</h3>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-100 text-cyan-800 dark:bg-cyan-950/80 dark:text-cyan-400 border border-cyan-500/30">
-                          OPTIMAL
-                        </span>
-                      </div>
-                      
-                      <p className="text-xs text-slate-600 dark:text-slate-400 font-sans mb-4">
-                        Storage node health and cryptographic integrity verification.
-                      </p>
-
-                      <div className="space-y-1.5 mb-6">
-                        <div className="flex justify-between text-xs font-mono">
-                          <span className="text-slate-500 dark:text-slate-400">PRESSURE STABILITY</span>
-                          <span className="text-cyan-600 dark:text-cyan-400 font-bold">92%</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div className="w-[92%] h-full bg-[#25e2cc] rounded-full"></div>
-                        </div>
-                      </div>
-
-                      {/* 2 Metric Boxes */}
-                      <div className="grid grid-cols-2 gap-3 font-sans">
-                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0e131b] border border-slate-200 dark:border-slate-800">
-                          <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase font-bold">PSI</div>
-                          <div className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-snug">
-                            Storage node health and cryptographic integrity verification.
-                          </div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0e131b] border border-slate-200 dark:border-slate-800">
-                          <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase font-bold">FLOW (m³/h)</div>
-                          <div className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-snug">
-                            Storage node health and cryptographic integrity verification.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-[#111720] hover:bg-slate-200 dark:hover:bg-[#16202c] text-xs font-mono font-bold text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-800 hover:border-[#25e2cc] transition-all cursor-pointer">
-                      Analyze Monitoring
-                    </button>
-                  </div>
-
+                  ))}
                 </div>
 
               </div>
+
+              {/* UPLOAD DATA REPOSITORY MODAL */}
+              {isUploadModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                  <div 
+                    onClick={() => setIsUploadModalOpen(false)}
+                    className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm"
+                  />
+
+                  <div className="relative z-10 w-full max-w-lg bg-white dark:bg-[#0c1015] border border-slate-300 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 font-sans">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                      <div className="flex items-center gap-2">
+                        <Database className="w-5 h-5 text-[#25e2cc]" />
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                          Upload / Create Data Repository
+                        </h3>
+                      </div>
+                      <button 
+                        onClick={() => setIsUploadModalOpen(false)}
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleCreateRepository} className="space-y-5">
+                      {/* Repository Name Input */}
+                      <div>
+                        <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase">
+                          REPOSITORY NAME
+                        </label>
+                        <input 
+                          type="text"
+                          required
+                          placeholder="e.g. Substation_alpha_telemetry_hub"
+                          value={newRepoName}
+                          onChange={(e) => setNewRepoName(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-[#12161c] border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#25e2cc]"
+                        />
+                      </div>
+
+                      {/* Asset Scope Selection (Single Asset vs Group Assets) */}
+                      <div>
+                        <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase">
+                          ASSET TYPE / SCOPE
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setAssetType('Single Asset')}
+                            className={`p-3 rounded-xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
+                              assetType === 'Single Asset'
+                                ? 'bg-[#25e2cc]/10 border-[#25e2cc] text-slate-900 dark:text-white'
+                                : 'bg-slate-50 dark:bg-[#12161c] border-slate-300 dark:border-slate-800 text-slate-500'
+                            }`}
+                          >
+                            <Zap className={`w-4 h-4 ${assetType === 'Single Asset' ? 'text-[#25e2cc]' : 'text-slate-400'}`} />
+                            <div>
+                              <div className="text-xs font-bold font-sans">Single Asset</div>
+                              <div className="text-[10px] font-mono text-slate-400">One machine/motor</div>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setAssetType('Group Assets')}
+                            className={`p-3 rounded-xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
+                              assetType === 'Group Assets'
+                                ? 'bg-[#25e2cc]/10 border-[#25e2cc] text-slate-900 dark:text-white'
+                                : 'bg-slate-50 dark:bg-[#12161c] border-slate-300 dark:border-slate-800 text-slate-500'
+                            }`}
+                          >
+                            <Database className={`w-4 h-4 ${assetType === 'Group Assets' ? 'text-[#25e2cc]' : 'text-slate-400'}`} />
+                            <div>
+                              <div className="text-xs font-bold font-sans">Group Assets</div>
+                              <div className="text-[10px] font-mono text-slate-400">Plant fleet / network</div>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* File Upload Dropzone Option */}
+                      <div>
+                        <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase">
+                          DATA LOGS / FILE UPLOAD
+                        </label>
+                        <div 
+                          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                          onDragLeave={() => setIsDragging(false)}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            setIsDragging(false);
+                            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                              setSelectedFile(e.dataTransfer.files[0]);
+                            }
+                          }}
+                          className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${
+                            isDragging 
+                              ? 'border-[#25e2cc] bg-[#25e2cc]/10' 
+                              : 'border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-[#12161c] hover:border-slate-400'
+                          }`}
+                        >
+                          <input 
+                            type="file" 
+                            id="file-upload-input" 
+                            className="hidden" 
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setSelectedFile(e.target.files[0]);
+                              }
+                            }}
+                          />
+                          <label htmlFor="file-upload-input" className="cursor-pointer space-y-2 block">
+                            <Download className="w-6 h-6 text-[#25e2cc] mx-auto" />
+                            {selectedFile ? (
+                              <div>
+                                <div className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                  Selected File: {selectedFile.name}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono">
+                                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                  Click to select telemetry log file or drag & drop
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                  Supports .parquet, .db, .csv, .h5, .json logs (Up to 50 GB)
+                                </div>
+                              </div>
+                            )}
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => { setIsUploadModalOpen(false); setSelectedFile(null); }}
+                          className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-6 py-2.5 rounded-xl bg-[#25e2cc] hover:bg-[#1fd1bd] text-slate-950 font-mono font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md shadow-[#25e2cc]/20"
+                        >
+                          <span>Confirm Upload & Ingest</span>
+                          <Zap className="w-3.5 h-3.5 fill-current" />
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             /* SUPPORT PAGE VIEW */

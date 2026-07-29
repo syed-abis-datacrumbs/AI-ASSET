@@ -11,9 +11,9 @@ export const LoginModal: React.FC = () => {
   const { isModalOpen, closeModal } = useAuthModal();
   const router = useRouter();
 
-  const [companyId, setCompanyId] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [companyId, setCompanyId] = useState('CMP-8849-PWR');
+  const [username, setUsername] = useState('abis@fixsset.com');
+  const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
 
